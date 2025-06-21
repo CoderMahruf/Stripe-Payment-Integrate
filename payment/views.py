@@ -5,6 +5,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Subscription,Order,Feature
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 # Create your views here.
 # api 
 from rest_framework.views import APIView
@@ -48,3 +51,71 @@ class FeatureAPIView(APIView):
             "message": "Data fetched successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+    
+
+
+
+def payment_success(request):
+    response = {
+        'status': 'success',
+        'message': 'Payment completed successfully.'
+    }
+    return JsonResponse(response, status=200)
+
+
+def payment_cancel(request):
+    response = {
+        'status': 'cancelled',
+        'message': 'Payment was cancelled by the user.'
+    }
+    return JsonResponse(response, status=400)
+
+
+from django.views import View
+from django.shortcuts import get_object_or_404, redirect
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import Subscription, Order
+import stripe
+
+@method_decorator(csrf_exempt, name='dispatch')
+class CreatePaymentView(LoginRequiredMixin, View):
+    def post(self, request, subscription_id):
+        subscription = get_object_or_404(Subscription, id=subscription_id)
+
+        # Create order
+        order = Order.objects.create(
+            user=request.user,
+            subscription=subscription,
+            amount=subscription.price
+        )
+
+        # Create Stripe Checkout session
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(subscription.price * 100),  # in cents
+                        'product_data': {
+                            'name': subscription.plan_name,
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                customer_email=request.user.email,
+                success_url=request.build_absolute_uri('/success/'),
+                cancel_url=request.build_absolute_uri('/cancel/'),
+            )
+        except stripe.error.StripeError as e:
+            # Handle Stripe errors properly (e.g., logging or showing error page)
+            return JsonResponse({'error': str(e)}, status=500)
+
+        # Save session ID to order
+        order.stripe_checkout_session_id = session.id
+        order.save()
+
+        return redirect(session.url)

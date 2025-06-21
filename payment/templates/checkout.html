@@ -221,7 +221,8 @@
             <div class="payment-form">
                 <h2>Payment Information</h2>
                 
-                <form id="payment-form">
+                <form action="{% url 'create-payment' subscription.id %}" method="post">
+                    {% csrf_token %}
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" required placeholder="your@email.com">
@@ -229,19 +230,11 @@
                     
                     <div class="form-group">
                         <label for="name">Name on Card</label>
-                        <input type="text" id="name" required placeholder="John Smith">
+                        <input type="text" id="name" required placeholder="Visa or Master Card">
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Card Details</label>
-                        <div id="card-element">
-                            <!-- Stripe Card Element will be inserted here -->
-                        </div>
-                        <div id="card-errors" role="alert" class="error"></div>
-                    </div>
-                    
+                                        
                     <button type="submit" id="submit-button">
-                        <span id="button-text">Pay $10.90</span>
+                        <span id="button-text">Pay ${{subscription.price}}</span>
                         <span id="button-spinner" class="spinner hidden"></span>
                     </button>
                     
