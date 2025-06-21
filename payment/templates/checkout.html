@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostinger - Checkout</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2f1c6a;
+            margin-bottom: 10px;
+        }
+        
+        .checkout-container {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+        }
+        
+        .order-summary {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            width: 400px;
+        }
+        
+        .payment-form {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            width: 500px;
+        }
+        
+        h2 {
+            color: #2f1c6a;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        
+        .plan-selected {
+            background: #f8f5ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .plan-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2f1c6a;
+            margin-bottom: 5px;
+        }
+        
+        .plan-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #673de6;
+            margin-bottom: 15px;
+        }
+        
+        .plan-features {
+            list-style-type: none;
+        }
+        
+        .plan-features li {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .plan-features li:before {
+            content: "✓";
+            color: #673de6;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-total {
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #673de6;
+        }
+        
+        #card-element {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #673de6;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a2fd6;
+        }
+        
+        .secure-payment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .secure-payment svg {
+            margin-right: 8px;
+        }
+        
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Hostinger</div>
+            <h1>Complete Your Purchase</h1>
+        </header>
+        
+        <div class="checkout-container">
+            <div class="order-summary">
+                <h2>Order Summary</h2>
+                
+                <div class="plan-selected">
+                    <div class="plan-name" id="selected-plan-name">{{subscription.plan_name}}</div>
+                    <div class="plan-price" id="selected-plan-price">${{subscription.price}}/mo</div>
+                    <ul class="plan-features" id="selected-plan-features">
+                        {% for feature in features %}
+                        <li>{{feature.text}}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                         
+                <div class="summary-item summary-total">
+                    <span>Total</span>
+                    <span id="total">${{subscription.price}}</span>
+                </div>
+            </div>
+            
+            <div class="payment-form">
+                <h2>Payment Information</h2>
+                
+                <form id="payment-form">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" required placeholder="your@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="name">Name on Card</label>
+                        <input type="text" id="name" required placeholder="John Smith">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Card Details</label>
+                        <div id="card-element">
+                            <!-- Stripe Card Element will be inserted here -->
+                        </div>
+                        <div id="card-errors" role="alert" class="error"></div>
+                    </div>
+                    
+                    <button type="submit" id="submit-button">
+                        <span id="button-text">Pay $10.90</span>
+                        <span id="button-spinner" class="spinner hidden"></span>
+                    </button>
+                    
+                    <div class="secure-payment">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 1C4.13438 1 1 4.13438 1 8C1 11.8656 4.13438 15 8 15C11.8656 15 15 11.8656 15 8C15 4.13438 11.8656 1 8 1ZM7.5 11.25V12.5H8.5V11.25H7.5ZM8 5.5C6.62188 5.5 5.5 6.62188 5.5 8C5.5 8.27625 5.72375 8.5 6 8.5C6.27625 8.5 6.5 8.27625 6.5 8C6.5 7.1725 7.1725 6.5 8 6.5C8.8275 6.5 9.5 7.1725 9.5 8C9.5 8.55188 9.22062 8.85938 8.8875 9.19438L8.69062 9.38938C8.30938 9.76438 8 10.0794 8 10.75C8 10.8881 7.88813 11 7.75 11H7.5C7.22375 11 7 10.7763 7 10.5C7 9.9875 7.27938 9.64062 7.6125 9.30562L7.80938 9.11062C8.19062 8.73562 8.5 8.42062 8.5 7.75C8.5 7.1725 7.8275 6.5 7.25 6.5H7C6.72375 6.5 6.5 6.27625 6.5 6C6.5 5.72375 6.72375 5.5 7 5.5H8Z" fill="#666"/>
+                        </svg>
+                        Secure payment powered by Stripe
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <footer>
+            © 2025 Hostinger. All rights reserved.
+        </footer>
+    </div>
+
+    <script>
+        // Get the plan from URL parameter or default to Premium
+        const urlParams = new URLSearchParams(window.location.search);
+        const plan = urlParams.get('plan') || 'premium';
+        
+        // Plan details
+        const plans = {
+            'starter': {
+                name: 'Starter',
+                price: 5.00,
+                features: [
+                    '1 Website',
+                    '10 GB SSD Storage',
+                    'Free SSL & Email',
+                    'Weekly Backups'
+                ]
+            },
+            'premium': {
+                name: 'Premium',
+                price: 10.00,
+                features: [
+                    '10 Websites',
+                    '100 GB SSD Storage',
+                    'Daily Backups',
+                    'Priority Support'
+                ]
+            },
+            'business': {
+                name: 'Business',
+                price: 25.00,
+                features: [
+                    'Unlimited Websites',
+                    '1 TB SSD Storage',
+                    'AI Optimization Tools',
+                    'Dedicated Support'
+                ]
+            }
+        };
+        
+        // Update the order summary based on selected plan
+        function updateOrderSummary(selectedPlan) {
+            document.getElementById('selected-plan-name').textContent = selectedPlan.name;
+            document.getElementById('selected-plan-price').textContent = `$${selectedPlan.price.toFixed(2)}/mo`;
+            
+            const featuresList = document.getElementById('selected-plan-features');
+            featuresList.innerHTML = '';
+            selectedPlan.features.forEach(feature => {
+                const li = document.createElement('li');
+                li.textContent = feature;
+                featuresList.appendChild(li);
+            });
+            
+            const subtotal = selectedPlan.price;
+            const tax = subtotal * 0.09; // Assuming 9% tax
+            const total = subtotal + tax;
+            
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('button-text').textContent = `Pay $${total.toFixed(2)}`;
+        }
+        
+        // Initialize with the selected plan
+        updateOrderSummary(plans[plan]);
+        
+    
