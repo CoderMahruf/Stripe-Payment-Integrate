@@ -221,7 +221,7 @@
             <div class="payment-form">
                 <h2>Payment Information</h2>
                 
-                <form action="{% url 'create-payment' subscription.id %}" method="post">
+                <form method="POST" action="{% url 'create-payment' subscription.id %}">
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="email">Email Address</label>
@@ -230,7 +230,7 @@
                     
                     <div class="form-group">
                         <label for="name">Name on Card</label>
-                        <input type="text" id="name" required placeholder="Visa or Master Card">
+                        <input type="text" id="name" required placeholder="Mahruful Alam">
                     </div>
                                         
                     <button type="submit" id="submit-button">

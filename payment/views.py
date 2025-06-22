@@ -8,12 +8,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
-# Create your views here.
 # api 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import SubscriptionSerializer,FeatureSerializer
+# Create your views here.
 
 class SubscriptionListView(View):
     def get (self,request):
@@ -71,14 +71,6 @@ def payment_cancel(request):
     return JsonResponse(response, status=400)
 
 
-from django.views import View
-from django.shortcuts import get_object_or_404, redirect
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Subscription, Order
-import stripe
-
 @method_decorator(csrf_exempt, name='dispatch')
 class CreatePaymentView(LoginRequiredMixin, View):
     def post(self, request, subscription_id):
@@ -106,7 +98,6 @@ class CreatePaymentView(LoginRequiredMixin, View):
                     'quantity': 1,
                 }],
                 mode='payment',
-                customer_email=request.user.email,
                 success_url=request.build_absolute_uri('/success/'),
                 cancel_url=request.build_absolute_uri('/cancel/'),
             )
