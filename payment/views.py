@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
+from django.contrib.auth.models import User
 # api 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -110,3 +111,29 @@ class CreatePaymentView(LoginRequiredMixin, View):
         order.save()
 
         return redirect(session.url)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(View):
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+        endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, endpoint_secret 
+            )
+        except ValueError as e:
+            return JsonResponse({'error':(e)},status=400)
+        except stripe.error.SignatureVerificationError as e:
+            return JsonResponse({'error':(e)},status=400)
+
+        # Handle event
+        if event['type'] == 'checkout.session.completed':
+            print(event)
+            session = event['data']['object']
+            order = Order.objects.get(stripe_checkout_session_id=session['id'])
+            order.is_paid = True
+            order.save()
+            return JsonResponse({'status':'success'})
+
+        return JsonResponse(({'status':'unhandled_event'}))

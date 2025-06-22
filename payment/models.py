@@ -22,7 +22,6 @@ class Feature(models.Model):
         return f"{self.text} ({self.subscription})"
 
 
-
 class Order(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
     subscription = models.ForeignKey(Subscription,on_delete=models.CASCADE)
