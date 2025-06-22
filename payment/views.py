@@ -30,19 +30,6 @@ class SubscriptionListAPIView(APIView):
             "message": "Data fetched successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
-
-class CheckoutView(View):
-    template_name = 'checkout.html'
-    def get(self, request, subscription_id):
-        subscription = get_object_or_404(Subscription, id=subscription_id)
-        features = subscription.features.all()
-        return render(request, self.template_name, {
-            'subscription': subscription,
-            'features': features
-        })
-
-
-# api 
 class FeatureAPIView(APIView):
     def get(self,request,*args, **kwargs):
         queryset = Feature.objects.all()
@@ -52,8 +39,16 @@ class FeatureAPIView(APIView):
             "message": "Data fetched successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
-    
-
+   
+class CheckoutView(View):
+    template_name = 'checkout.html'
+    def get(self, request, subscription_id):
+        subscription = get_object_or_404(Subscription, id=subscription_id)
+        features = subscription.features.all()
+        return render(request, self.template_name, {
+            'subscription': subscription,
+            'features': features
+        })
 
 
 def payment_success(request):
