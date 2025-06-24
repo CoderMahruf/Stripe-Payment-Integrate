@@ -8,12 +8,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
-from django.contrib.auth.models import User
+from authentication.models import User
 # api 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import SubscriptionSerializer,FeatureSerializer
+from rest_framework.permissions import IsAuthenticated,AllowAny
 # Create your views here.
 
 class SubscriptionListView(View):
@@ -71,14 +72,12 @@ def payment_cancel(request):
 class CreatePaymentView(LoginRequiredMixin, View):
     def post(self, request, subscription_id):
         subscription = get_object_or_404(Subscription, id=subscription_id)
-
         # Create order
         order = Order.objects.create(
             user=request.user,
             subscription=subscription,
             amount=subscription.price
         )
-
         # Create Stripe Checkout session
         try:
             session = stripe.checkout.Session.create(
@@ -100,12 +99,47 @@ class CreatePaymentView(LoginRequiredMixin, View):
         except stripe.error.StripeError as e:
             # Handle Stripe errors properly (e.g., logging or showing error page)
             return JsonResponse({'error': str(e)}, status=500)
-
         # Save session ID to order
         order.stripe_checkout_session_id = session.id
         order.save()
-
         return redirect(session.url)
+    
+# api 
+class CreatePaymentApiView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, subscription_id):
+        subscription = get_object_or_404(Subscription, id=subscription_id)
+        # Create Order
+        order = Order.objects.create(
+            user = request.user,
+            subscription=subscription,
+            amount=subscription.price
+        )
+        # Create Stripe Checkout Session
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(subscription.price * 100),
+                        'product_data': {
+                            'name': subscription.plan_name,
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=request.build_absolute_uri('/success/'),
+                cancel_url=request.build_absolute_uri('/cancel/'),
+            )
+        except stripe.error.StripeError as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Save session ID
+        order.stripe_checkout_session_id = session.id
+        order.save()
+        # Return session URL
+        return Response({'checkout_url': session.url}, status=status.HTTP_200_OK)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StripeWebhookView(View):

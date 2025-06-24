@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SubscriptionListView,CheckoutView,SubscriptionListAPIView,FeatureAPIView,CreatePaymentView,StripeWebhookView, payment_success, payment_cancel
+from .views import SubscriptionListView,CheckoutView,SubscriptionListAPIView,FeatureAPIView,CreatePaymentApiView,CreatePaymentView,StripeWebhookView, payment_success, payment_cancel
 
 urlpatterns = [
     path('subscription',SubscriptionListView.as_view(),name='subscription'),
@@ -13,5 +13,6 @@ urlpatterns = [
 
     # for api 
     path('api/subscription',SubscriptionListAPIView.as_view()),
-    path('api/subscription/feature',FeatureAPIView.as_view())
+    path('api/subscription/feature',FeatureAPIView.as_view()),
+    path('api/create-payment/<int:subscription_id>/',CreatePaymentApiView.as_view(),name='create-payment'),
 ]
